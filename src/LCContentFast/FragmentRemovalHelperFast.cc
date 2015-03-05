@@ -10,6 +10,10 @@
 
 #include "LCContentFast/FragmentRemovalHelperFast.h"
 
+#include <unordered_map>
+#include <set>
+#include <iostream>
+
 using namespace pandora;
 
 namespace lc_content_fast
@@ -368,11 +372,18 @@ void ClusterContact::HitDistanceComparison(const Cluster *const pDaughterCluster
     // Loop over hits in daughter cluster
     for (OrderedCaloHitList::const_iterator iterI = orderedCaloHitListI.begin(), iterIEnd = orderedCaloHitListI.end(); iterI != iterIEnd; ++iterI)
     {
+		//keep track of frequency of NN selection of parent hits
+		std::unordered_map<const CaloHit*, int> nnFreqMap;
+		int nDaughterHits = 0;
+		
         for (CaloHitList::const_iterator hitIterI = iterI->second->begin(), hitIterIEnd = iterI->second->end(); hitIterI != hitIterIEnd; ++hitIterI)
         {
+			++nDaughterHits;
             bool isCloseHit1(false), isCloseHit2(false);
             const CartesianVector &positionVectorI((*hitIterI)->GetPositionVector());
 
+			CaloHitList::const_iterator hitIterNN = iterI->second->end();
+			
             // Compare each hit in daughter cluster with those in parent cluster
             for (OrderedCaloHitList::const_iterator iterJ = orderedCaloHitListJ.begin(), iterJEnd = orderedCaloHitListJ.end(); iterJ != iterJEnd; ++iterJ)
             {
@@ -386,10 +397,19 @@ void ClusterContact::HitDistanceComparison(const Cluster *const pDaughterCluster
                     if (!isCloseHit2 && (distanceSquared < closeHitDistance2Squared))
                         isCloseHit2 = true;
 
-                    if (distanceSquared < minDistanceSquared)
+                    if (distanceSquared < minDistanceSquared){
                         minDistanceSquared = distanceSquared;
+						hitIterNN = hitIterJ;
+					}
                 }
             }
+			
+			//increment frequency of NN hit
+			if(hitIterNN!=iterI->second->end()) {
+				auto iterFreq = nnFreqMap.find(*hitIterNN);
+				if(iterFreq == nnFreqMap.end()) nnFreqMap[*hitIterNN] = 1;
+				else nnFreqMap[*hitIterNN] += 1;
+			}
 
             if (isCloseHit1)
                 nCloseHits1++;
@@ -397,6 +417,24 @@ void ClusterContact::HitDistanceComparison(const Cluster *const pDaughterCluster
             if (isCloseHit2)
                 nCloseHits2++;
         }
+		
+		//find most frequent hits
+		std::multiset<int> sortedFreqs;
+		for(auto iterFreq = nnFreqMap.begin(); iterFreq != nnFreqMap.end(); ++iterFreq){
+			sortedFreqs.insert(iterFreq->second);
+		}
+		
+		//print info
+		std::cout << "HITDIST" << " " << iterI->first << " " << nDaughterHits;
+		auto iterSort = sortedFreqs.rbegin();
+		for(int isort = 0; isort < 3; isort++){
+			if(iterSort != sortedFreqs.rend()) {
+				std::cout << " " << *iterSort;
+				++iterSort;
+			}
+			else std::cout << " " << 0;
+		}
+		std::cout << std::endl;
     }
 
     const unsigned int nDaughterCaloHits(pDaughterCluster->GetNCaloHits());
