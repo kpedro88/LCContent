@@ -81,7 +81,7 @@ bool SortingHelper::SortTracksByEnergy(const Track *const pLhs, const Track *con
 
 bool SortingHelper::SortHitsByRadiusToCentroid(const std::pair<const pandora::CaloHit *, float>& pLhs, const std::pair<const pandora::CaloHit *, float>& pRhs)
 {
-	return (pLhs.second > pRhs.second);
+	return (pLhs.second < pRhs.second);
 }
 
 } // namespace lc_content

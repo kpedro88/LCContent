@@ -374,7 +374,7 @@ void ClusterContact::HitDistanceComparison(const Cluster *const pDaughterCluster
 	const unsigned int nParentCaloHits(pParentCluster->GetNCaloHits());
 	std::vector<std::pair<const CaloHit*, float> > parentRadii;
 	parentRadii.reserve(nParentCaloHits);
-	const unsigned int nClosestHits = 6; //todo: make configurable
+	const unsigned int nClosestHits = 10; //todo: make configurable
 	const unsigned int nActualClosestHits = std::min(nClosestHits,nParentCaloHits);
 	for (OrderedCaloHitList::const_iterator iterJ = orderedCaloHitListJ.begin(), iterJEnd = orderedCaloHitListJ.end(); iterJ != iterJEnd; ++iterJ)
 	{
