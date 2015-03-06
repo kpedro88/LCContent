@@ -365,6 +365,7 @@ void ClusterContact::HitDistanceComparison(const Cluster *const pDaughterCluster
     // Calculate all hit distance properties in a single loop, for efficiency
     unsigned int nCloseHits1(0), nCloseHits2(0);
     float minDistanceSquared(std::numeric_limits<float>::max());
+    float minDistanceSquared2(std::numeric_limits<float>::max());
         
     const OrderedCaloHitList &orderedCaloHitListI(pDaughterCluster->GetOrderedCaloHitList());
     const OrderedCaloHitList &orderedCaloHitListJ(pParentCluster->GetOrderedCaloHitList());
@@ -386,6 +387,9 @@ void ClusterContact::HitDistanceComparison(const Cluster *const pDaughterCluster
     // Loop over hits in daughter cluster
     for (OrderedCaloHitList::const_iterator iterI = orderedCaloHitListI.begin(), iterIEnd = orderedCaloHitListI.end(); iterI != iterIEnd; ++iterI)
     {
+		int nDaughterHitsPseudolayerMatched = 0;
+		int nDaughterHitsPseudolayerMisMatched = 0;
+		int nDaughterHitsPseudolayerNotMatched = 0;
 		const CartesianVector centroidVector(pDaughterCluster->GetCentroid(iterI->first));
 
 		//sort parent hits by radial distance to centroid
@@ -401,26 +405,61 @@ void ClusterContact::HitDistanceComparison(const Cluster *const pDaughterCluster
             bool isCloseHit1(false), isCloseHit2(false);
             const CartesianVector &positionVectorI((*hitIterI)->GetPositionVector());
 
+			CaloHitList::const_iterator match1 = iterI->second->end();
+			unsigned int match2 = parentRadii.size();
+			
+            // Compare each hit in daughter cluster with those in parent cluster
+            for (OrderedCaloHitList::const_iterator iterJ = orderedCaloHitListJ.begin(), iterJEnd = orderedCaloHitListJ.end(); iterJ != iterJEnd; ++iterJ)
+            {
+                for (CaloHitList::const_iterator hitIterJ = iterJ->second->begin(), hitIterJEnd = iterJ->second->end(); hitIterJ != hitIterJEnd; ++hitIterJ)
+                {
+                    const float distanceSquared((positionVectorI - (*hitIterJ)->GetPositionVector()).GetMagnitudeSquared());
+
+                    if (!isCloseHit1 && (distanceSquared < closeHitDistance1Squared))
+                        isCloseHit1 = true;
+
+                    if (!isCloseHit2 && (distanceSquared < closeHitDistance2Squared))
+                        isCloseHit2 = true;
+
+                    if (distanceSquared < minDistanceSquared){
+                        minDistanceSquared = distanceSquared;
+						match1 = hitIterJ;
+					}
+                }
+            }
+			
 			//compare only closest parent hits to daughter hits
 			for(unsigned int indexJ = 0; indexJ < nActualClosestHits; ++indexJ){
 				const float distanceSquared((positionVectorI - (parentRadii.at(indexJ).first)->GetPositionVector()).GetMagnitudeSquared());
 
-				if (!isCloseHit1 && (distanceSquared < closeHitDistance1Squared))
-					isCloseHit1 = true;
+				//if (!isCloseHit1 && (distanceSquared < closeHitDistance1Squared))
+				//	isCloseHit1 = true;
+                //
+				//if (!isCloseHit2 && (distanceSquared < closeHitDistance2Squared))
+				//	isCloseHit2 = true;
 
-				if (!isCloseHit2 && (distanceSquared < closeHitDistance2Squared))
-					isCloseHit2 = true;
-
-				if (distanceSquared < minDistanceSquared)
-					minDistanceSquared = distanceSquared;
+				if (distanceSquared < minDistanceSquared2){
+					minDistanceSquared2 = distanceSquared;
+					match2 = indexJ;
+				}
 			}
 
+			//compare match results
+			if(match1!=iterI->second->end()) {
+				++nDaughterHitsPseudolayerMatched;
+				if(match2==parentRadii.size()) ++nDaughterHitsPseudolayerNotMatched;
+				else if((*match1)!=parentRadii.at(match2).first) ++nDaughterHitsPseudolayerMisMatched;
+			}
+			
             if (isCloseHit1)
                 nCloseHits1++;
 
             if (isCloseHit2)
                 nCloseHits2++;
         }
+		
+		//print info
+		std::cout << "MATCHTEST" << " " << iterI->first << " " << nDaughterHitsPseudolayerMatched << " " << nDaughterHitsPseudolayerMisMatched << " " << nDaughterHitsPseudolayerNotMatched;
     }
 
     const unsigned int nDaughterCaloHits(pDaughterCluster->GetNCaloHits());
