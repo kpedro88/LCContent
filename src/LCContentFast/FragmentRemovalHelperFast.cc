@@ -369,15 +369,22 @@ void ClusterContact::HitDistanceComparison(const Cluster *const pDaughterCluster
     const OrderedCaloHitList &orderedCaloHitListI(pDaughterCluster->GetOrderedCaloHitList());
     const OrderedCaloHitList &orderedCaloHitListJ(pParentCluster->GetOrderedCaloHitList());
 
+	//keep track of per-cluster qtys
+	int nDaughterPseudolayers = 0;
+	int nDaughterHits = 0;
+	
     // Loop over hits in daughter cluster
     for (OrderedCaloHitList::const_iterator iterI = orderedCaloHitListI.begin(), iterIEnd = orderedCaloHitListI.end(); iterI != iterIEnd; ++iterI)
     {
+		++nDaughterPseudolayers;
 		//keep track of frequency of NN selection of parent hits
 		std::unordered_map<const CaloHit*, int> nnFreqMap;
-		int nDaughterHits = 0;
+		int nDaughterHitsPseudolayer = 0;
+		int nDaughterHitsPseudolayerMatched = 0;
 		
         for (CaloHitList::const_iterator hitIterI = iterI->second->begin(), hitIterIEnd = iterI->second->end(); hitIterI != hitIterIEnd; ++hitIterI)
         {
+			++nDaughterHitsPseudolayer;
 			++nDaughterHits;
             bool isCloseHit1(false), isCloseHit2(false);
             const CartesianVector &positionVectorI((*hitIterI)->GetPositionVector());
@@ -406,6 +413,7 @@ void ClusterContact::HitDistanceComparison(const Cluster *const pDaughterCluster
 			
 			//increment frequency of NN hit
 			if(hitIterNN!=iterI->second->end()) {
+				++nDaughterHitsPseudolayerMatched;
 				auto iterFreq = nnFreqMap.find(*hitIterNN);
 				if(iterFreq == nnFreqMap.end()) nnFreqMap[*hitIterNN] = 1;
 				else nnFreqMap[*hitIterNN] += 1;
@@ -425,9 +433,9 @@ void ClusterContact::HitDistanceComparison(const Cluster *const pDaughterCluster
 		}
 		
 		//print info
-		std::cout << "HITDIST" << " " << iterI->first << " " << nDaughterHits;
+		std::cout << "HITDIST" << " " << iterI->first << " " << nDaughterHitsPseudolayer << " " << nDaughterHitsPseudolayerMatched;
 		auto iterSort = sortedFreqs.rbegin();
-		for(int isort = 0; isort < 3; isort++){
+		for(int isort = 0; isort < 10; isort++){
 			if(iterSort != sortedFreqs.rend()) {
 				std::cout << " " << *iterSort;
 				++iterSort;
@@ -436,6 +444,9 @@ void ClusterContact::HitDistanceComparison(const Cluster *const pDaughterCluster
 		}
 		std::cout << std::endl;
     }
+	
+	//print per-cluster info
+	std::cout << "CLUSTDIST" << " " << pDaughterCluster << " " << nDaughterPseudolayers << " " << nDaughterHits << std::endl;
 
     const unsigned int nDaughterCaloHits(pDaughterCluster->GetNCaloHits());
 
