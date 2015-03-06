@@ -459,7 +459,7 @@ void ClusterContact::HitDistanceComparison(const Cluster *const pDaughterCluster
         }
 		
 		//print info
-		std::cout << "MATCHTEST" << " " << iterI->first << " " << nDaughterHitsPseudolayerMatched << " " << nDaughterHitsPseudolayerMisMatched << " " << nDaughterHitsPseudolayerNotMatched;
+		std::cout << "MATCHTEST" << " " << iterI->first << " " << nDaughterHitsPseudolayerMatched << " " << nDaughterHitsPseudolayerMisMatched << " " << nDaughterHitsPseudolayerNotMatched << std::endl;
     }
 
     const unsigned int nDaughterCaloHits(pDaughterCluster->GetNCaloHits());
